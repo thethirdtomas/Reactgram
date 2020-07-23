@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import { useForm } from 'react-hook-form';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { Redirect } from 'react-router-dom';
+
+//Utilites
+import firebase from '../utilities/FirebaseDAO';
 
 //Custom Components
-import { TextLinkButton } from '../components/TextLinkButton';
+import { useAuth, AuthConstraint, Constraints, AuthRedirect } from '../components/AuthProvider';
+import {
+  TextLinkButton,
+  CenterLoad,
+  FormPaper,
+  TitleBanner
+} from '../components/MyComponents';
 
 //Material UI Components
 import {
   Typography,
-  Paper,
   Grid,
   TextField,
   Button,
@@ -18,6 +26,7 @@ import {
   OutlinedInput,
   InputAdornment,
   IconButton,
+  CircularProgress,
 } from '@material-ui/core';
 
 //Material UI Icons
@@ -35,64 +44,90 @@ const useStyles = makeStyles((theme: Theme) =>
       flexGrow: 1,
       marginTop: 100,
     },
-    paper: {
-      padding: theme.spacing(2),
-      minWidth: 400,
-      textAlign: 'center',
-    },
-    title: {
-      fontFamily: 'Satisfy',
-    },
     textBox: {
-      minWidth: 350,
+      minWidth: 300,
     },
   }),
 );
 
-//State
-interface State {
-  invalidCred: boolean
-  showPassword: boolean
-}
-
 type SignInFormData = {
-  email: String,
-  password: String,
+  email: string,
+  password: string,
 }
 
 //Main Component
 export const SignIn: React.FC = () => {
 
-  const [state, setState] = useState<State>({
-    invalidCred: false,
-    showPassword: false,
-  })
+  //State Hooks
+  const [redirect, setRedirect] = useState<string | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(false); //Sign In Loading
+  const [showPassword, setShowPassword] = useState(false);
+  const [invaildCred, setInvaildCred] = useState(false);
 
-  const { executeRecaptcha } = useGoogleReCaptcha();
+
   const classes = useStyles();
 
-  const { register, handleSubmit, errors } = useForm<SignInFormData>();
+  const { register, handleSubmit, reset, errors } = useForm<SignInFormData>();
 
-  const onSubmit = async (data: SignInFormData) => {
-    if (!executeRecaptcha) {
-      return;
+  const auth = useAuth()!
+
+  const authConstraint: AuthConstraint = {
+    authLevel: 2,
+    constraint: Constraints.lessThanLevel
+  }
+
+  //Redirect Effect
+  useEffect(() => {
+    AuthRedirect({
+      auth: auth,
+      authConstraint: authConstraint,
+      redirectTo: '/home',
+      redirectHook: setRedirect
+    });
+  }, [auth, authConstraint])
+
+  //Page Loading Effect
+  useEffect(() => {
+    if (auth) {
+      setPageLoading(false);
     }
-    
-    setState({...state, invalidCred: !state.invalidCred})
-    const result = await executeRecaptcha('signInPage');
-    console.log(result);
-    console.log(data);
+  }, [auth]);
+
+
+  const onSignIn = (formData: SignInFormData) => {
+
+    setLoading(true)
+
+    firebase.auth().signInWithEmailAndPassword(formData.email, formData.password)
+      .then(response => {
+        if (!response.user?.emailVerified) {
+          response.user?.sendEmailVerification();
+          setRedirect('/verify-email');
+        }
+      })
+      .catch(() => {
+        setLoading(false);
+        setInvaildCred(true);
+        reset({ ...formData, password: '' });
+      })
+  }
+
+  if (redirect) {
+    return <Redirect to={redirect} />
+  } else if (pageLoading) {
+    return <CenterLoad />
   }
 
   return (
     <div className={classes.root}>
       <Grid container direction='column' alignItems='center' spacing={2}>
         <Grid item>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Paper className={classes.paper}>
+          <form onSubmit={handleSubmit(onSignIn)} noValidate={true}>
+            <FormPaper>
               <Grid item container direction='column' alignItems='center' spacing={4}>
                 <Grid item>
-                  <Typography className={classes.title} variant='h3'>Reactgram</Typography>
+                  <TitleBanner />
                 </Grid>
                 <Grid item container alignItems='center' spacing={2}>
                   <Grid item>
@@ -104,7 +139,7 @@ export const SignIn: React.FC = () => {
                       label="Email"
                       variant="outlined"
                       name="email"
-                      type="input"
+                      type="email"
                       inputRef={register({ required: true })}
                       error={!!errors.email}
                     />
@@ -120,16 +155,17 @@ export const SignIn: React.FC = () => {
                       <OutlinedInput
                         name="password"
                         inputRef={register({ required: true })}
-                        type={state.showPassword ? 'text' : 'password'}
+                        type={showPassword ? 'text' : 'password'}
                         endAdornment={
                           <InputAdornment position="end">
                             <IconButton
                               color='inherit'
                               aria-label="toggle password visibility"
                               edge="end"
-                              onClick={() => setState({...state, showPassword: !state.showPassword})}
+                              onClick={() => setShowPassword(!showPassword)}
+                              onMouseDown={(event) => event.preventDefault()}
                             >
-                              {state.showPassword ? <VisibilityOutlined /> : <VisibilityOffOutlined />}
+                              {showPassword ? <VisibilityOutlined /> : <VisibilityOffOutlined />}
                             </IconButton>
                           </InputAdornment>
                         }
@@ -139,25 +175,28 @@ export const SignIn: React.FC = () => {
                     </FormControl>
                   </Grid>
                 </Grid>
-                {state.invalidCred &&
+                {invaildCred &&
                   <Grid item>
                     <Typography variant='body2' color='error'> Invalid email or password. </Typography>
                   </Grid>
                 }
                 <Grid item>
-                  <Button type='submit' variant="contained" color="primary" >Sign In</Button>
+                  {loading
+                    ? <CircularProgress />
+                    : <Button type='submit' variant="contained" color="primary" >Sign In</Button>
+                  }
                 </Grid>
                 <Grid item>
-                  <TextLinkButton varient='caption' path='/signup' text="Forgot your password?" />
+                  <TextLinkButton varient='caption' path='/forgot-password' text="Forgot your password?" />
                 </Grid>
               </Grid>
-            </Paper>
+            </FormPaper>
           </form>
         </Grid>
         <Grid item>
-          <Paper className={classes.paper}>
+          <FormPaper>
             <TextLinkButton varient='subtitle1' path='/signup' text="Don't have an account? Sign up here!" />
-          </Paper>
+          </FormPaper>
         </Grid>
       </Grid>
     </div>

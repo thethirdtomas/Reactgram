@@ -2,8 +2,8 @@
 //Length constraints
 export const NameMinLength: number = 2;
 export const NameMaxLength: number = 70;
-export const UsernameMaxLength: number = 70; 
-export const PasswordMinLength: number = 8;
+export const UsernameMaxLength: number = 70;
+export const PasswordMinLength: number = 6;
 export const PasswordMaxLength: number = 100;
 
 
@@ -16,14 +16,14 @@ export const UsernamePattern: RegExp = /^[a-zA-Z0-9]+$/;
 //Constrait Messages 
 export const RequiredMessage: string = 'required';
 
-export const InvaildMessage = (field:string):string => {
+export const InvaildMessage = (field: string): string => {
     return `invalid ${field}`
 }
 
-export const MinLengthMessage = (length:number):string => {
+export const MinLengthMessage = (length: number): string => {
     return `minimum length of ${length}`
 }
 
-export const MaxLengthMessage = (length:number):string => {
+export const MaxLengthMessage = (length: number): string => {
     return `maximum length of ${length}`
 }

@@ -3,16 +3,10 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import { App } from './App';
 import * as serviceWorker from './serviceWorker';
-import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 
 ReactDOM.render(
   <React.StrictMode>
-    <GoogleReCaptchaProvider
-      useRecaptchaNet
-      reCaptchaKey={process.env.REACT_APP_RECAPTCHA_KEY}
-    >
-      <App />
-    </GoogleReCaptchaProvider>
+    <App />
   </React.StrictMode>,
   document.getElementById('root')
 );

@@ -1,18 +1,24 @@
-import React, { useState } from 'react';
-import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
+import React, { useState, useEffect } from 'react';
+import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { useForm } from "react-hook-form";
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { Redirect } from 'react-router-dom';
 
 //Utilities
-import * as Constraints from '../utilities/FormConstraints';
+import firebase from '../utilities/FirebaseDAO';
+import * as FormConstraints from '../utilities/FormConstraints';
 
 //Custom Components
-import { TextLinkButton } from '../components/TextLinkButton';
+import { useAuth, AuthConstraint, Constraints, AuthRedirect } from '../components/AuthProvider';
+import {
+  TextLinkButton,
+  CenterLoad,
+  FormPaper,
+  TitleBanner,
+} from '../components/MyComponents';
 
 //Material UI Components
 import {
   Typography,
-  Paper,
   Grid,
   TextField,
   Button,
@@ -22,6 +28,7 @@ import {
   InputAdornment,
   IconButton,
   FormHelperText,
+  CircularProgress
 } from '@material-ui/core';
 
 //Material UI Icons
@@ -35,22 +42,14 @@ import {
 } from '@material-ui/icons'
 
 //Custom Styles
-const useStyles = makeStyles((theme: Theme) =>
+const useStyles = makeStyles(() =>
   createStyles({
     root: {
       flexGrow: 1,
       marginTop: 100,
     },
-    paper: {
-      padding: theme.spacing(2),
-      minWidth: 400,
-      textAlign: 'center',
-    },
-    title: {
-      fontFamily: 'Satisfy',
-    },
     textBox: {
-      minWidth: 350,
+      minWidth: 300,
     },
     message: {
       maxWidth: 300
@@ -58,40 +57,107 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-
+//State
 type SignUpFormData = {
-  email: String,
-  name: String,
-  username: String,
-  password: String,
+  email: string,
+  name: string,
+  username: string,
+  password: string,
 }
 
 export const SignUp: React.FC = () => {
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [redirect, setRedirect] = useState<string | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(false) //Sign Up Loading
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const classes = useStyles();
+
   const { register, handleSubmit, errors } = useForm<SignUpFormData>({
     mode: 'onChange',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const { executeRecaptcha } = useGoogleReCaptcha();
 
-  const onSubmit = async (data: SignUpFormData) => {
-    if (!executeRecaptcha) {
-      return;
+  const auth = useAuth()!
+
+  const authConstraint: AuthConstraint = {
+    authLevel: 2,
+    constraint: Constraints.lessThanLevel
+  }
+
+  //Redirect Effect
+  useEffect(() => {
+    AuthRedirect({
+      auth: auth,
+      authConstraint: authConstraint,
+      redirectTo: '/home',
+      redirectHook: setRedirect
+    })
+  }, [auth, authConstraint])
+
+  //Page Loading Effect
+  useEffect(() => {
+    if (auth) {
+      setPageLoading(false);
     }
-    const result = await executeRecaptcha('signUpPage');
-    console.log(result);
-    console.log(data)
+  }, [auth])
+
+  const onSignUp = (data: SignUpFormData) => {
+    setLoading(true);
+    usernameTaken(data.username).then(taken => {
+      if (taken) {
+        setErrorMsg('username taken');
+        setLoading(false);
+      } else {
+        firebase.auth().createUserWithEmailAndPassword(data.email.trim(), data.password.trim())
+          .then(response => {
+            firebase.firestore().collection('users').doc(response.user?.uid).set({
+              name: data.name,
+              username: data.username
+            });
+            response.user?.sendEmailVerification().then(() => {
+              setRedirect('/verify-email');
+            })
+          })
+          .catch((error) => {
+            switch (error.code) {
+              case 'auth/email-already-in-use':
+                setErrorMsg('email is already in use')
+                break;
+              default: {
+                setErrorMsg('error during sign up')
+              }
+            }
+            setLoading(false);
+          })
+      }
+    })
   };
+
+  const usernameTaken = async (username: string): Promise<boolean> => {
+    const data = await firebase
+      .firestore()
+      .collection('users')
+      .where('username', '==', username)
+      .limit(1).get();
+    return data.size > 0;
+  }
+
+  if (redirect) {
+    return <Redirect to={redirect} />
+  } else if (pageLoading) {
+    return <CenterLoad />
+  }
 
   return (
     <div className={classes.root}>
       <Grid container direction='column' alignItems='center' spacing={2}>
         <Grid item>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Paper className={classes.paper}>
+          <form onSubmit={handleSubmit(onSignUp)} noValidate={true}>
+            <FormPaper>
               <Grid item container direction='column' alignItems='center' spacing={4}>
                 <Grid item>
-                  <Typography className={classes.title} variant='h3'>Reactgram</Typography>
+                  <TitleBanner />
                 </Grid>
                 <Grid item className={classes.message}>
                   <Typography variant='subtitle1' color='textSecondary'>
@@ -108,12 +174,12 @@ export const SignUp: React.FC = () => {
                       label="Email"
                       variant="outlined"
                       name="email"
-                      type="input"
+                      type="email"
                       inputRef={register({
-                        required: Constraints.RequiredMessage,
+                        required: FormConstraints.RequiredMessage,
                         pattern: {
-                          value: Constraints.EmailPattern,
-                          message: Constraints.InvaildMessage('email')
+                          value: FormConstraints.EmailPattern,
+                          message: FormConstraints.InvaildMessage('email')
                         }
                       })}
                       error={!!errors.email}
@@ -134,16 +200,16 @@ export const SignUp: React.FC = () => {
                       inputRef={register({
                         required: "required",
                         pattern: {
-                          value: Constraints.NamePattern,
-                          message: Constraints.InvaildMessage('name')
+                          value: FormConstraints.NamePattern,
+                          message: FormConstraints.InvaildMessage('name')
                         },
                         minLength: {
-                          value: Constraints.NameMinLength,
-                          message: Constraints.MinLengthMessage(Constraints.NameMinLength)
+                          value: FormConstraints.NameMinLength,
+                          message: FormConstraints.MinLengthMessage(FormConstraints.NameMinLength)
                         },
                         maxLength: {
-                          value: Constraints.NameMaxLength,
-                          message: Constraints.MaxLengthMessage(Constraints.NameMaxLength),
+                          value: FormConstraints.NameMaxLength,
+                          message: FormConstraints.MaxLengthMessage(FormConstraints.NameMaxLength),
                         }
                       })}
                       error={!!errors.name}
@@ -162,14 +228,14 @@ export const SignUp: React.FC = () => {
                       variant="outlined"
                       name="username"
                       inputRef={register({
-                        required: Constraints.RequiredMessage,
+                        required: FormConstraints.RequiredMessage,
                         pattern: {
-                          value: Constraints.UsernamePattern,
-                          message: Constraints.InvaildMessage('username')
+                          value: FormConstraints.UsernamePattern,
+                          message: FormConstraints.InvaildMessage('username')
                         },
                         maxLength: {
-                          value: Constraints.UsernameMaxLength,
-                          message: Constraints.MaxLengthMessage(Constraints.UsernameMaxLength)
+                          value: FormConstraints.UsernameMaxLength,
+                          message: FormConstraints.MaxLengthMessage(FormConstraints.UsernameMaxLength)
                         }
                       })}
                       error={!!errors.username}
@@ -187,14 +253,14 @@ export const SignUp: React.FC = () => {
                       <OutlinedInput
                         name="password"
                         inputRef={register({
-                          required: Constraints.RequiredMessage,
+                          required: FormConstraints.RequiredMessage,
                           minLength: {
-                            value: Constraints.PasswordMinLength,
-                            message: Constraints.MinLengthMessage(Constraints.PasswordMinLength)
+                            value: FormConstraints.PasswordMinLength,
+                            message: FormConstraints.MinLengthMessage(FormConstraints.PasswordMinLength)
                           },
                           maxLength: {
-                            value: Constraints.PasswordMaxLength,
-                            message: Constraints.MaxLengthMessage(Constraints.PasswordMaxLength)
+                            value: FormConstraints.PasswordMaxLength,
+                            message: FormConstraints.MaxLengthMessage(FormConstraints.PasswordMaxLength)
                           }
                         })}
                         type={showPassword ? 'text' : 'password'}
@@ -205,6 +271,7 @@ export const SignUp: React.FC = () => {
                               aria-label="toggle password visibility"
                               edge="end"
                               onClick={() => setShowPassword(!showPassword)}
+                              onMouseDown={(event) => event.preventDefault()}
                             >
                               {showPassword ? <VisibilityOutlined /> : <VisibilityOffOutlined />}
                             </IconButton>
@@ -217,8 +284,16 @@ export const SignUp: React.FC = () => {
                     </FormControl>
                   </Grid>
                 </Grid>
+                {errorMsg &&
+                  <Grid item>
+                    <Typography variant='body2' color='error'> {errorMsg} </Typography>
+                  </Grid>
+                }
                 <Grid item>
-                  <Button type='submit' variant="contained" color="primary" >Sign Up</Button>
+                  {loading
+                    ? <CircularProgress />
+                    : <Button type='submit' variant="contained" color="primary" >Sign Up</Button>
+                  }
                 </Grid>
                 <Grid item className={classes.message}>
                   <Typography variant='caption' color='textSecondary'>
@@ -226,13 +301,13 @@ export const SignUp: React.FC = () => {
                 </Typography>
                 </Grid>
               </Grid>
-            </Paper>
+            </FormPaper>
           </form>
         </Grid>
         <Grid item>
-          <Paper className={classes.paper}>
+          <FormPaper>
             <TextLinkButton varient='subtitle1' path='/signin' text="Already have account? Sign in here!" />
-          </Paper>
+          </FormPaper>
         </Grid>
       </Grid>
     </div>

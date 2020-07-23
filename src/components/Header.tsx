@@ -1,21 +1,35 @@
-import React from 'react';
-import { AppBar, Toolbar} from '@material-ui/core';
+import React, { useEffect, useState } from 'react';
+import { AppBar, Toolbar, Button } from '@material-ui/core';
+import firebase from '../utilities/FirebaseDAO';
+import { useAuth } from '../components/AuthProvider';
 
-interface Props {
-    auth?: boolean
-}
+export const Header: React.FC = () => {
+    const auth = useAuth()!
+    const authLevel = 2
+    const [hidden, setHidden] = useState(true);
 
+    useEffect(() => {
+        if (auth && auth.authLevel >= authLevel) {
+            setHidden(false);
+        } else {
+            setHidden(true);
+        }
+    }, [auth])
 
-export const Header: React.FC<Props> = (props: Props) => {
-    if (props.auth) {
-        return (
-            <AppBar position='static' color='transparent'>
-                <Toolbar>
-
-                </Toolbar>
-            </AppBar>
-        )
+    const signOut = () => {
+        firebase.auth().signOut();
     }
 
-    return <span />
+    if (hidden) {
+        return <span />
+    }
+
+    return (
+        <AppBar position='static' color='transparent'>
+            <Toolbar>
+                {auth.uid}
+                <Button onClick={signOut} variant="contained" color="primary" >Sign Out</Button>
+            </Toolbar>
+        </AppBar>
+    )
 }

@@ -10,7 +10,10 @@ import {
 
 //Custom Components
 import { useAuth, AuthConstraint, Constraints, AuthRedirect } from '../components/AuthProvider';
-import { CenterLoad } from '../components/MyComponents';
+import {
+  CenterLoad,
+  Post,
+} from '../components/MyComponents';
 
 export const Home: React.FC = () => {
   const auth = useAuth()!
@@ -46,11 +49,21 @@ export const Home: React.FC = () => {
     return <CenterLoad />
   }
 
+
+  let posts = [];
+  for (let i = 0; i < 50; i++) {
+    posts.push(
+      <Grid item>
+        <Post />
+      </Grid>
+    );
+  }
+
   return (
     <div>
       <Helmet><title>Home / Reactgram</title></Helmet>
-      <Grid container>
-        This is the home page {auth.uid}
+      <Grid container direction='column' alignItems='center' spacing={4} >
+        {posts}
       </Grid>
     </div>
 

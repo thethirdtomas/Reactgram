@@ -35,6 +35,7 @@ const useStyles = makeStyles((theme: Theme) =>
     createStyles({
         grow: {
             flexGrow: 1,
+            marginBottom: 50,
         },
         menuButton: {
             marginRight: theme.spacing(2),
@@ -225,7 +226,7 @@ export const Header: React.FC = () => {
 
     return (
         <div className={classes.grow}>
-            <AppBar position="static" color='transparent'>
+            <AppBar position="fixed" style={{ backgroundColor: 'white' }}>
                 <Toolbar>
                     <Hidden smDown>
                         <div className={classes.grow} />
@@ -263,8 +264,8 @@ export const Header: React.FC = () => {
                         >
                             {location.pathname === '/profile'
                                 || location.pathname === '/settings'
-                                ? <AccountCircle />
-                                : <AccountCircleOutlined />
+                                ? <AccountCircle style={{ color: 'black' }} />
+                                : <AccountCircleOutlined style={{ color: 'black' }} />
                             }
                         </IconButton>
                     </div>
@@ -274,7 +275,7 @@ export const Header: React.FC = () => {
                             onClick={handleMobileMenuOpen}
                             color="inherit"
                         >
-                            <MenuOutlined />
+                            <MenuOutlined style={{ color: 'black' }} />
                         </IconButton>
                     </div>
                 </Toolbar>

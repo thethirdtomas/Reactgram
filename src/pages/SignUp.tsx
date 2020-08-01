@@ -47,7 +47,6 @@ const useStyles = makeStyles(() =>
   createStyles({
     root: {
       flexGrow: 1,
-      marginTop: 100,
     },
     textBox: {
       minWidth: 300,

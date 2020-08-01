@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { makeStyles, createStyles } from '@material-ui/core/styles';
 import { Redirect } from 'react-router-dom';
+import { Helmet } from 'react-helmet';
 
 //Material UI Components
 import {
@@ -76,6 +77,7 @@ export const VerifyEmail: React.FC = () => {
 
   return (
     <div className={classes.root}>
+      <Helmet><title>Email Sent / Reactgram</title></Helmet>
       <Grid container direction='column' alignItems='center' spacing={2}>
         <Grid item>
           <FormPaper>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import { useForm } from 'react-hook-form';
 import { Redirect } from 'react-router-dom';
+import { Helmet } from "react-helmet";
 
 //Utilites
 import firebase from '../utilities/FirebaseDAO';
@@ -121,6 +122,9 @@ export const SignIn: React.FC = () => {
 
   return (
     <div className={classes.root}>
+      <Helmet>
+        <title>Sign In / Reactgram</title>
+      </Helmet>
       <Grid container direction='column' alignItems='center' spacing={2}>
         <Grid item>
           <form onSubmit={handleSubmit(onSignIn)} noValidate={true}>

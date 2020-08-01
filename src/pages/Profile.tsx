@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
-import { Helmet } from "react-helmet";
+import { Helmet } from 'react-helmet';
 
 //Material UI Components
 import {
@@ -12,7 +12,7 @@ import {
 import { useAuth, AuthConstraint, Constraints, AuthRedirect } from '../components/AuthProvider';
 import { CenterLoad } from '../components/MyComponents';
 
-export const Home: React.FC = () => {
+export const Profile: React.FC = () => {
   const auth = useAuth()!
   const [pageLoading, setPageLoading] = useState(true);
   const [redirect, setRedirect] = useState<string | null>(null);
@@ -48,11 +48,10 @@ export const Home: React.FC = () => {
 
   return (
     <div>
-      <Helmet><title>Home / Reactgram</title></Helmet>
+      <Helmet><title>My Profile / Reactgram</title></Helmet>
       <Grid container>
-        This is the home page {auth.uid}
+        This is the profile page for {auth.uid}
       </Grid>
-    </div>
-
+    </div >
   )
 }

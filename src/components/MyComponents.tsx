@@ -109,8 +109,8 @@ const PostStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       [theme.breakpoints.up('sm')]: {
-        minWidth: 450,
-        maxWidth: 450,
+        minWidth: 500,
+        maxWidth: 500,
       },
 
     },
@@ -126,7 +126,6 @@ export const Post: React.FC = () => {
           <Avatar
             src='https://i.pinimg.com/originals/47/1d/ce/471dceb4de8764f4fc4e166ffe5dd038.jpg'
             onClick={() => { console.log("You clicked the avatar") }}
-            draggable={false}
           />
         }
         title="Mar Kar"

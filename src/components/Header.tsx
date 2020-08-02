@@ -14,6 +14,7 @@ import {
     Menu,
     Divider,
     Hidden,
+    Avatar,
 } from '@material-ui/core';
 
 
@@ -23,8 +24,6 @@ import {
     Home,
     FavoriteBorderOutlined,
     Favorite,
-    AccountCircleOutlined,
-    AccountCircle,
     SettingsOutlined,
     Settings,
     MenuOutlined,
@@ -59,6 +58,12 @@ const useStyles = makeStyles((theme: Theme) =>
                 display: 'none',
             },
         },
+
+        avatar: {
+            width: theme.spacing(3),
+            height: theme.spacing(3),
+            color: 'black',
+        }
     }),
 );
 
@@ -183,11 +188,10 @@ export const Header: React.FC = () => {
             <Link to='/profile' style={{ textDecoration: 'none' }}>
                 <MenuItem onClick={handleMobileMenuClose}>
                     <IconButton color="inherit">
-                        {location.pathname === '/profile'
-                            ? <AccountCircle />
-                            : <AccountCircleOutlined />
+                        {auth?.photoURL
+                            ? <Avatar className={classes.avatar} src={auth.photoURL} />
+                            : <Avatar className={classes.avatar}>{auth?.name?.charAt(0).toUpperCase()}</Avatar>
                         }
-
                     </IconButton>
                     <Typography variant='subtitle1'>
                         My Profile
@@ -262,10 +266,9 @@ export const Header: React.FC = () => {
                             onClick={handleProfileMenuOpen}
                             color="inherit"
                         >
-                            {location.pathname === '/profile'
-                                || location.pathname === '/settings'
-                                ? <AccountCircle style={{ color: 'black' }} />
-                                : <AccountCircleOutlined style={{ color: 'black' }} />
+                            {auth.photoURL
+                                ? <Avatar className={classes.avatar} src={auth.photoURL} />
+                                : <Avatar className={classes.avatar}>{auth.name?.charAt(0).toUpperCase()}</Avatar>
                             }
                         </IconButton>
                     </div>
@@ -282,6 +285,6 @@ export const Header: React.FC = () => {
             </AppBar>
             {renderMobileMenu}
             {renderMenu}
-        </div>
+        </div >
     );
 }

@@ -111,15 +111,21 @@ export const SignUp: React.FC = () => {
       } else {
         firebase.auth().createUserWithEmailAndPassword(data.email.trim(), data.password.trim())
           .then(response => {
+            response.user?.updateProfile({
+              displayName: data.name.trim(),
+              photoURL: undefined,
+            })
             firebase.firestore().collection('users').doc(response.user?.uid).set({
-              name: data.name,
-              username: data.username
+              name: data.name.trim(),
+              username: data.username.trim(),
+              joined: firebase.firestore.Timestamp.now(),
             });
             response.user?.sendEmailVerification().then(() => {
               setRedirect('/verify-email');
             })
           })
           .catch((error) => {
+            console.log(error);
             switch (error.code) {
               case 'auth/email-already-in-use':
                 setErrorMsg('email is already in use')

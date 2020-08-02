@@ -5,6 +5,8 @@ type AuthState = {
   authLevel: number;
   uid: string | null;
   email: string | null;
+  name: string | null;
+  photoURL: string | null;
 }
 /*
   authLevel = 0  -No authentication
@@ -21,11 +23,29 @@ export const AuthProvider: React.FC = props => {
   useEffect(() => {
     firebase.auth().onAuthStateChanged((user) => {
       if (user && user.emailVerified) {
-        setAuth({ authLevel: 2, email: user.email, uid: user.uid });
+        setAuth({
+          authLevel: 2,
+          email: user.email,
+          uid: user.uid,
+          name: user.displayName,
+          photoURL: user.photoURL,
+        });
       } else if (user) {
-        setAuth({ authLevel: 1, email: user.email, uid: user.uid });
+        setAuth({
+          authLevel: 1,
+          email: user.email,
+          uid: user.uid,
+          name: user.displayName,
+          photoURL: user.photoURL,
+        });
       } else {
-        setAuth({ authLevel: 0, email: null, uid: null });
+        setAuth({
+          authLevel: 0,
+          email: null,
+          uid: null,
+          name: null,
+          photoURL: null,
+        });
       }
     });
   }, [])

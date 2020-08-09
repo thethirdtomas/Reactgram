@@ -1,10 +1,11 @@
 
 //Length constraints
-export const NameMinLength: number = 2;
 export const NameMaxLength: number = 70;
 export const UsernameMaxLength: number = 70;
 export const PasswordMinLength: number = 6;
 export const PasswordMaxLength: number = 100;
+export const BioMaxLength = 160;
+export const LocationMaxLength = 30;
 
 
 //Pattern constraints

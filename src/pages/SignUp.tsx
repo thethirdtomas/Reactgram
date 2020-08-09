@@ -42,6 +42,11 @@ import {
   VisibilityOffOutlined,
 } from '@material-ui/icons'
 
+//Types 
+import {
+  SignUpFormData,
+} from '../types/myTypes'
+
 //Custom Styles
 const useStyles = makeStyles(() =>
   createStyles({
@@ -56,14 +61,6 @@ const useStyles = makeStyles(() =>
     },
   }),
 );
-
-//State
-type SignUpFormData = {
-  email: string,
-  name: string,
-  username: string,
-  password: string,
-}
 
 export const SignUp: React.FC = () => {
 
@@ -211,10 +208,6 @@ export const SignUp: React.FC = () => {
                         pattern: {
                           value: FormConstraints.NamePattern,
                           message: FormConstraints.InvaildMessage('name')
-                        },
-                        minLength: {
-                          value: FormConstraints.NameMinLength,
-                          message: FormConstraints.MinLengthMessage(FormConstraints.NameMinLength)
                         },
                         maxLength: {
                           value: FormConstraints.NameMaxLength,

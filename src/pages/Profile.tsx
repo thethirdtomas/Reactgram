@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
-import { TransitionProps } from '@material-ui/core/transitions/transition';
 
 //Material UI Components
 import {
@@ -10,16 +9,10 @@ import {
   Card,
   CardMedia,
   CardContent,
-  CardActionArea,
   Typography,
   CardActions,
   Button,
   Avatar,
-  IconButton,
-  TextField,
-  Dialog,
-  DialogContent,
-  Slide,
 } from '@material-ui/core';
 
 //Material UI Icons
@@ -32,6 +25,7 @@ import {
 
 //Custom Components
 import { useAuth, AuthConstraint, Constraints, AuthRedirect } from '../components/AuthProvider';
+import { EditProfileDialog } from '../components/EditProfileDialog'
 import {
   CenterLoad,
   Post,
@@ -41,8 +35,7 @@ const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       [theme.breakpoints.up('sm')]: {
-        minWidth: 500,
-        maxWidth: 500,
+        width: 500,
       },
     },
 
@@ -62,21 +55,8 @@ const useStyles = makeStyles((theme: Theme) =>
       boxShadow: "0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)",
       width: "100%"
     },
-    textField: {
-      width: '100%',
-      marginBottom: 20,
-    },
   }),
 );
-
-//Dialog Animation
-const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & { children?: React.ReactElement<any, any> },
-  ref: React.Ref<unknown>,
-) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
-
 
 export const Profile: React.FC = () => {
   const auth = useAuth()!
@@ -88,6 +68,14 @@ export const Profile: React.FC = () => {
   const authConstraint: AuthConstraint = {
     authLevel: 1,
     constraint: Constraints.greaterThanLevel
+  }
+
+  const openEditProfile = () => {
+    setOpen(true);
+  }
+
+  const closeEditProfile = () => {
+    setOpen(false);
   }
 
   //Redirect Effect
@@ -117,65 +105,11 @@ export const Profile: React.FC = () => {
   return (
     <div>
       <Helmet><title>My Profile / Reactgram</title></Helmet>
-      <Dialog
+      <EditProfileDialog
+        auth={auth}
         open={open}
-        TransitionComponent={Transition}
-        onClose={() => { setOpen(false); }}
-      >
-        <DialogContent>
-          <Grid container direction='column'>
-            <Grid item container justify='flex-end' style={{ padding: 10 }}>
-              <Button size="small" color="primary" variant='contained'>Save</Button>
-            </Grid>
-            <Grid item>
-              <CardActionArea>
-                <CardMedia
-                  height='140'
-                  component="img"
-                  alt="Profile Header"
-                  image="https://i.pinimg.com/originals/1c/3f/76/1c3f76c36819dcff58b9b9a1ebb5a990.jpg"
-                  title="Profile Header"
-                  className={classes.header}
-                />
-              </CardActionArea>
-            </Grid>
-            <Grid item>
-              <IconButton>
-                {auth.photoURL
-                  ? <Avatar className={classes.avatarLarge} src={auth.photoURL} />
-                  : <Avatar className={classes.avatarLarge}>{auth.name?.charAt(0).toUpperCase()}</Avatar>
-                }
-              </IconButton>
-            </Grid>
-            <Grid item container direction='column' style={{ padding: 10 }}>
-              <Grid item>
-                <TextField
-                  label="Name"
-                  variant="outlined"
-                  className={classes.textField}
-                  helperText='0/20'
-                />
-              </Grid>
-              <Grid item>
-                <TextField
-                  label="Bio"
-                  variant="outlined"
-                  className={classes.textField}
-                  helperText='0/20'
-                />
-              </Grid>
-              <Grid item>
-                <TextField
-                  label="Location"
-                  variant="outlined"
-                  className={classes.textField}
-                  helperText='0/20'
-                />
-              </Grid>
-            </Grid>
-          </Grid>
-        </DialogContent>
-      </Dialog>
+        onClose={closeEditProfile}
+      />
       <Grid container direction='column' alignItems='center' spacing={4} >
         <Grid item>
           <Card className={classes.root}>
@@ -243,7 +177,7 @@ export const Profile: React.FC = () => {
             </CardContent>
 
             <CardActions>
-              <Button size="small" color="primary" onClick={() => { setOpen(true); }}>
+              <Button size="small" color="primary" onClick={openEditProfile}>
                 Edit profile
               </Button>
             </CardActions>

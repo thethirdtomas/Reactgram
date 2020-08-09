@@ -1,13 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { AuthState } from '../types/myTypes'
 import firebase from '../utilities/FirebaseDAO';
 
-type AuthState = {
-  authLevel: number;
-  uid: string | null;
-  email: string | null;
-  name: string | null;
-  photoURL: string | null;
-}
 /*
   authLevel = 0  -No authentication
   authLevel = 1  -Authenticated, not email verifed
@@ -87,16 +81,23 @@ const VerifyConstraint = (authConstraint: AuthConstraint, authLevel: number) => 
   }
 }
 
-export const AuthRedirect = (params: {
-  auth: AuthState
+interface AuthRedirectParams {
+  auth: AuthState,
   authConstraint: AuthConstraint,
   redirectTo: string,
   redirectHook: React.Dispatch<React.SetStateAction<string | null>>
+}
 
-}) => {
-  if (params.auth) {
-    if (!VerifyConstraint(params.authConstraint, params.auth.authLevel)) {
-      params.redirectHook(params.redirectTo);
+export const AuthRedirect = ({
+  auth,
+  authConstraint,
+  redirectTo,
+  redirectHook
+
+}: AuthRedirectParams) => {
+  if (auth) {
+    if (!VerifyConstraint(authConstraint, auth.authLevel)) {
+      redirectHook(redirectTo);
     }
   }
 }

@@ -188,10 +188,7 @@ export const Header: React.FC = () => {
             <Link to='/profile' style={{ textDecoration: 'none' }}>
                 <MenuItem onClick={handleMobileMenuClose}>
                     <IconButton color="inherit">
-                        {auth?.photoURL
-                            ? <Avatar className={classes.avatar} src={auth.photoURL} />
-                            : <Avatar className={classes.avatar}>{auth?.name?.charAt(0).toUpperCase()}</Avatar>
-                        }
+                        <Avatar className={classes.avatar} src={auth?.photoURL ? auth.photoURL : ''} />
                     </IconButton>
                     <Typography variant='subtitle1'>
                         My Profile
@@ -266,10 +263,7 @@ export const Header: React.FC = () => {
                             onClick={handleProfileMenuOpen}
                             color="inherit"
                         >
-                            {auth.photoURL
-                                ? <Avatar className={classes.avatar} src={auth.photoURL} />
-                                : <Avatar className={classes.avatar}>{auth.name?.charAt(0).toUpperCase()}</Avatar>
-                            }
+                            <Avatar className={classes.avatar} src={auth?.photoURL ? auth.photoURL : ''} />
                         </IconButton>
                     </div>
                     <div className={classes.grow} />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TransitionProps } from '@material-ui/core/transitions/transition';
 import { useForm } from "react-hook-form";
 import { makeStyles, createStyles, Theme, useTheme } from '@material-ui/core/styles';
@@ -13,6 +13,7 @@ import * as FormConstraints from '../utilities/FormConstraints';
 import {
   AuthState,
   EditProfileData,
+  ProfileData,
 } from '../types/myTypes'
 
 //Material UI Components
@@ -28,7 +29,7 @@ import {
   Dialog,
   DialogContent,
   Slide,
-  InputAdornment
+  CircularProgress,
 } from '@material-ui/core';
 
 //Material UI Icons
@@ -48,7 +49,6 @@ const useStyles = makeStyles((theme: Theme) =>
     avatarLarge: {
       width: theme.spacing(12),
       height: theme.spacing(12),
-      marginTop: -70,
       color: 'black',
       boxShadow: "0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)",
       fontSize: 32,
@@ -57,6 +57,11 @@ const useStyles = makeStyles((theme: Theme) =>
       borderWidth: 2,
 
     },
+
+    profileImageButton: {
+      marginTop: -70,
+    },
+
     header: {
       boxShadow: "0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)",
       width: "100%"
@@ -85,14 +90,20 @@ const Transition = React.forwardRef(function Transition(
 //Props
 type Props = {
   auth: AuthState,
+  profileData: ProfileData | undefined,
   open: boolean,
-  onClose: () => void
+  onClose: () => void,
+  onSave: (data: EditProfileData) => void,
 }
 
-export const EditProfileDialog: React.FC<Props> = ({ auth, open, onClose }) => {
+export const EditProfileDialog: React.FC<Props> = ({ auth, profileData, open, onClose, onSave }) => {
   const classes = useStyles();
   const theme = useTheme();
-  const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedProfileImage, setSelectedProfileImage] = useState<string | null>(null);
+  const [selectedHeaderImage, setSelectedHeaderImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const smallScreen = useMediaQuery(theme.breakpoints.down('xs'));
 
   //Input Lengths
@@ -101,32 +112,137 @@ export const EditProfileDialog: React.FC<Props> = ({ auth, open, onClose }) => {
   const [locationLen, setLocationLen] = useState<number>(0);
 
   //React Hook Form
-  const { register, handleSubmit, errors } = useForm<EditProfileData>({
+  const { register, handleSubmit, reset, errors } = useForm<EditProfileData>({
     mode: 'onChange',
     defaultValues: {
-      name: "Tomas Torres",
-      bio: null,
-      location: "",
+      name: profileData?.name,
+      bio: profileData?.bio,
+      location: profileData?.location,
     }
   });
+
+  //Refs
+  const profileImageInput = useRef<HTMLInputElement>(null);
+  const headerImageInput = useRef<HTMLInputElement>(null);
 
 
   const handleDateChange = (date: Date | null) => {
     setSelectedDate(date);
   };
 
-  const handleSave = (data: EditProfileData) => {
-    console.log(data);
+  const handleSave = async (data: EditProfileData) => {
+    setLoading(true);
+    setErrorMsg(null);
+    if (selectedProfileImage) {
+      try {
+        profileData!.photoURL = await uploadImage('/profileImages/', profileImageInput.current!.files![0]);
+      } catch (error) {
+        showError("Image file > 5MB");
+        return;
+      }
+    }
+
+    if (selectedHeaderImage) {
+      try {
+        profileData!.headerURL = await uploadImage('/headerImages/', headerImageInput.current!.files![0]);
+      } catch (error) {
+        showError("Image file > 5MB");
+        return;
+      }
+    }
+
+    //Updates User Document
+    try {
+      firebase.firestore().collection('users').doc(auth.uid).update({
+        name: data.name.trim(),
+        bio: data.bio ? data.bio.trim() : null,
+        location: data.location ? data.location.trim() : null,
+        birthDate: data.birthDate ? firebase.firestore.Timestamp.fromDate(new Date(data.birthDate)) : null,
+        photoURL: profileData?.photoURL ? profileData.photoURL : null,
+        headerURL: profileData?.headerURL ? profileData.headerURL : null,
+      });
+    } catch (error) {
+      console.log(error);
+      showError("Update failed. Please try again");
+      return;
+    }
+
+    //Updates Auth Profile
+    if (data.name.trim() !== profileData!.name || selectedProfileImage) {
+      try {
+        firebase.auth().currentUser?.updateProfile({
+          displayName: data.name.trim(),
+          photoURL: profileData?.photoURL,
+        });
+      } catch (error) {
+        console.log(error);
+        showError("Update failed. Please try again");
+        return;
+      }
+    }
+
+    onSave(data);
     onClose();
   }
+
+  //Returns image image url after uploading
+  const uploadImage = async (path: string, file: File): Promise<string> => {
+    let storageRef = firebase.storage().ref().child(`${path}${auth.uid}`);
+    await storageRef.put(file);
+    return storageRef.getDownloadURL();
+  }
+
+  const showError = (msg: string) => {
+    setErrorMsg(msg);
+    setLoading(false);
+  }
+
+  //Resets inputs on open
+  useEffect(() => {
+    setNameLen(profileData?.name ? profileData.name.length : 0);
+    setBioLen(profileData?.bio ? profileData.bio.length : 0);
+    setLocationLen(profileData?.location ? profileData.location.length : 0);
+    setSelectedProfileImage(null);
+    setSelectedHeaderImage(null);
+    setSelectedDate(profileData?.birthDate ? profileData.birthDate.toDate() : null);
+    setLoading(false);
+    setErrorMsg(null);
+
+    reset({
+      name: profileData?.name,
+      bio: profileData?.bio,
+      location: profileData?.location,
+    })
+  }, [open, profileData, reset]);
 
   return (
     <Dialog
       open={open}
       TransitionComponent={Transition}
-      onClose={onClose}
       fullScreen={smallScreen}
     >
+      <input
+        type="file"
+        ref={profileImageInput}
+        style={{ display: "none" }}
+        accept="image/*"
+        onChange={(event) => {
+          if (event.target.files && event.target.files!.length !== 0) {
+            setSelectedProfileImage(URL.createObjectURL(event.target.files[0]));
+          }
+        }}
+      />
+      <input
+        type="file"
+        ref={headerImageInput}
+        style={{ display: "none" }}
+        accept="image/*"
+        onChange={(event) => {
+          if (event.target.files && event.target.files!.length !== 0) {
+            setSelectedHeaderImage(URL.createObjectURL(event.target.files[0]));
+          }
+        }}
+      />
       <DialogContent className={classes.dialog}>
         <Grid container direction='column'>
           <form onSubmit={handleSubmit(handleSave)} noValidate={true}>
@@ -140,29 +256,53 @@ export const EditProfileDialog: React.FC<Props> = ({ auth, open, onClose }) => {
                 <Typography variant='h6' color='textSecondary'>Edit Profile</Typography>
               </Grid>
               <Grid item>
-                <Button type='submit' size='medium' color="primary" variant='contained'>Save</Button>
+                {loading
+                  ? <CircularProgress />
+                  : <Button type='submit' size='medium' color="primary" variant='contained'>Save</Button>
+                }
+
               </Grid>
             </Grid>
             <Grid item>
-              <CardActionArea>
+              <CardActionArea
+                onClick={() => {
+                  headerImageInput.current?.click();
+                }}
+              >
                 <CardMedia
                   height='140'
                   component="img"
                   alt="Profile Header"
-                  image="https://i.pinimg.com/originals/1c/3f/76/1c3f76c36819dcff58b9b9a1ebb5a990.jpg"
+                  image={selectedHeaderImage ? selectedHeaderImage :
+                    (profileData?.headerURL ? profileData.headerURL : "https://i.pinimg.com/originals/1c/3f/76/1c3f76c36819dcff58b9b9a1ebb5a990.jpg")}
                   title="Profile Header"
                   className={classes.header}
                 />
               </CardActionArea>
             </Grid>
             <Grid item>
-              <IconButton>
-                {auth.photoURL
-                  ? <Avatar className={classes.avatarLarge} src={auth.photoURL} />
-                  : <Avatar className={classes.avatarLarge}>{auth.name?.charAt(0).toUpperCase()}</Avatar>
-                }
+              <IconButton
+                className={classes.profileImageButton}
+                onClick={() => {
+                  profileImageInput.current?.click();
+                }}
+              >
+                <Avatar
+                  className={classes.avatarLarge}
+                  src={
+                    selectedProfileImage ? selectedProfileImage
+                      : (profileData?.photoURL ? profileData.photoURL : '')
+                  }
+                />
               </IconButton>
             </Grid>
+
+            {errorMsg &&
+              <Grid container item justify='center'>
+                <Typography variant='subtitle1' color='error'>{errorMsg}</Typography>
+              </Grid>
+
+            }
 
             <Grid item container direction='column' spacing={4} style={{ padding: 10 }}>
               <Grid item>
@@ -222,12 +362,13 @@ export const EditProfileDialog: React.FC<Props> = ({ auth, open, onClose }) => {
                   helperText={`${locationLen}/${FormConstraints.LocationMaxLength}`}
                 />
               </Grid>
-              <Grid container item>
+              <Grid item>
                 <MuiPickersUtilsProvider utils={DateFnsUtils}>
                   <DatePicker
+                    inputRef={register}
                     className={classes.textField}
-                    name="birthDate"
-                    variant={smallScreen ? 'dialog' : 'inline'}
+                    name='birthDate'
+                    variant='dialog'
                     inputVariant="outlined"
                     format="MM/dd/yyyy"
                     minDate="01/01/1900"
@@ -235,11 +376,11 @@ export const EditProfileDialog: React.FC<Props> = ({ auth, open, onClose }) => {
                     disableFuture
                     label="Birth Date"
                     value={selectedDate}
-                    inputRef={register}
                     onChange={handleDateChange}
-                    openTo='year'
                     autoOk
+                    openTo='year'
                     InputProps={{
+                      name: 'birthDate',
                       endAdornment: (
                         <IconButton onClick={() => {
                           setSelectedDate(null);

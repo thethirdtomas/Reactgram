@@ -36,7 +36,7 @@ export const AuthProvider: React.FC = props => {
         setAuth({
           authLevel: 0,
           email: null,
-          uid: null,
+          uid: undefined,
           name: null,
           photoURL: null,
         });

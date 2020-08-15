@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
 import { Helmet } from "react-helmet";
+import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
+
+/*Utilitles*/
+import firebase from '../utilities/FirebaseDAO';
+
+/*Types*/
+import { PostData } from '../types/myTypes';
+
+/*Custom Components */
+import { PostView } from '../components/PostView';
 
 //Material UI Components
 import {
@@ -10,15 +20,31 @@ import {
 
 //Custom Components
 import { useAuth, AuthConstraint, Constraints, AuthRedirect } from '../components/AuthProvider';
+import { PostForm } from '../components/PostForm';
 import {
   CenterLoad,
-  Post,
 } from '../components/MyComponents';
+
+/*Styles*/
+const styles = makeStyles(({ breakpoints }: Theme) =>
+  createStyles({
+    item: {
+      [breakpoints.up('sm')]: {
+        width: 600
+      },
+      [breakpoints.down('xs')]: {
+        width: '100%',
+      },
+    },
+  }),
+);
 
 export const Home: React.FC = () => {
   const auth = useAuth()!
   const [pageLoading, setPageLoading] = useState(true);
   const [redirect, setRedirect] = useState<string | null>(null);
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const classes = styles();
 
   const authConstraint: AuthConstraint = {
     authLevel: 1,
@@ -42,6 +68,35 @@ export const Home: React.FC = () => {
     }
   }, [auth]);
 
+  //Posts Effect
+  useEffect(() => {
+    const postsStream = firebase.firestore()
+      .collection('posts')
+      .orderBy('created', 'desc')
+      .onSnapshot(snapshot => {
+        setPosts(snapshot.docs.map((doc): PostData => {
+          const data = doc.data();
+          return {
+            uid: data.uid,
+            username: data.username,
+            name: data.name,
+            profileURL: data.profileURL,
+            text: data.text,
+            image: data.image,
+            likes: data.likes,
+            comments: data.comments,
+            reposts: data.reposts,
+            created: data.created,
+          }
+        }));
+      });
+
+    //Clean Up
+    return () => {
+      postsStream();
+    }
+  }, [])
+
   //auth redirect
   if (redirect) {
     return <Redirect to={redirect} />
@@ -49,23 +104,21 @@ export const Home: React.FC = () => {
     return <CenterLoad />
   }
 
-
-  let posts = [];
-  for (let i = 0; i < 50; i++) {
-    posts.push(
-      <Grid item>
-        <Post />
-      </Grid>
-    );
-  }
-
   return (
     <div>
       <Helmet><title>Home / Reactgram</title></Helmet>
-      <Grid container direction='column' alignItems='center' spacing={4} >
-        {posts}
+      <Grid container direction='column' alignItems='center' spacing={4}>
+        <Grid item className={classes.item}>
+          <PostForm auth={auth} />
+        </Grid>
+        {posts.map((post) => {
+          return (
+            <Grid item className={classes.item}>
+              <PostView postData={post} />
+            </Grid>
+          )
+        })}
       </Grid>
     </div>
-
-  )
+  );
 }

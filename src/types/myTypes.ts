@@ -3,6 +3,7 @@ export type AuthState = {
   uid: string | undefined;
   email: string | null;
   name: string | null;
+  username: string | null,
   photoURL: string | null;
 }
 
@@ -29,4 +30,17 @@ export type ProfileData = {
   birthDate: firebase.firestore.Timestamp | null,
   photoURL: string | null;
   headerURL: string | null;
+}
+
+export type PostData = {
+  uid: string,
+  username: string,
+  name: string,
+  profileURL: string | null
+  text: string | null,
+  image: string | null,
+  likes: number,
+  comments: number,
+  reposts: number,
+  created: firebase.firestore.Timestamp,
 }

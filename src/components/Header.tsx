@@ -233,7 +233,7 @@ export const Header: React.FC = () => {
                         <div className={classes.grow} />
                     </Hidden>
                     <Link to='/home' style={{ textDecoration: 'none' }}>
-                        <IconButton color="inherit">
+                        <IconButton color="inherit" onClick={() => { window.scrollTo(0, 0) }}>
                             <Typography className={classes.title} variant="h5" noWrap>
                                 Reactgram
                             </Typography>

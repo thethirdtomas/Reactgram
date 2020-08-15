@@ -11,7 +11,6 @@ import * as FormConstraints from '../utilities/FormConstraints';
 
 //Types
 import {
-  AuthState,
   EditProfileData,
   ProfileData,
 } from '../types/myTypes'
@@ -89,14 +88,14 @@ const Transition = React.forwardRef(function Transition(
 
 //Props
 type Props = {
-  auth: AuthState,
+  uid: string,
   profileData: ProfileData | undefined,
   open: boolean,
   onClose: () => void,
   onSave: (data: EditProfileData) => void,
 }
 
-export const EditProfileDialog: React.FC<Props> = ({ auth, profileData, open, onClose, onSave }) => {
+export const EditProfileDialog: React.FC<Props> = ({ uid, profileData, open, onClose, onSave }) => {
   const classes = useStyles();
   const theme = useTheme();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -153,7 +152,7 @@ export const EditProfileDialog: React.FC<Props> = ({ auth, profileData, open, on
 
     //Updates User Document
     try {
-      firebase.firestore().collection('users').doc(auth.uid).update({
+      await firebase.firestore().collection('users').doc(uid).update({
         name: data.name.trim(),
         bio: data.bio ? data.bio.trim() : null,
         location: data.location ? data.location.trim() : null,
@@ -168,26 +167,27 @@ export const EditProfileDialog: React.FC<Props> = ({ auth, profileData, open, on
     }
 
     //Updates Auth Profile
-    if (data.name.trim() !== profileData!.name || selectedProfileImage) {
+    if (selectedProfileImage || profileData?.name !== data.name.trim()) {
       try {
-        firebase.auth().currentUser?.updateProfile({
-          displayName: data.name.trim(),
+        await firebase.auth().currentUser?.updateProfile({
+          displayName: `${profileData?.username}-${data.name.trim()}`,
           photoURL: profileData?.photoURL,
         });
+        window.location.reload(true);
       } catch (error) {
         console.log(error);
         showError("Update failed. Please try again");
         return;
       }
+    } else {
+      onSave(data);
+      onClose();
     }
-
-    onSave(data);
-    onClose();
   }
 
   //Returns image image url after uploading
   const uploadImage = async (path: string, file: File): Promise<string> => {
-    let storageRef = firebase.storage().ref().child(`${path}${auth.uid}`);
+    let storageRef = firebase.storage().ref().child(`${path}${uid}`);
     await storageRef.put(file);
     return storageRef.getDownloadURL();
   }
@@ -213,7 +213,7 @@ export const EditProfileDialog: React.FC<Props> = ({ auth, profileData, open, on
       bio: profileData?.bio,
       location: profileData?.location,
     })
-  }, [open, profileData, reset]);
+  }, [open, reset, profileData]);
 
   return (
     <Dialog

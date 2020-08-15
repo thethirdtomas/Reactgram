@@ -16,27 +16,34 @@ export const AuthProvider: React.FC = props => {
 
   useEffect(() => {
     firebase.auth().onAuthStateChanged((user) => {
-      if (user && user.emailVerified) {
-        setAuth({
-          authLevel: 2,
-          email: user.email,
-          uid: user.uid,
-          name: user.displayName,
-          photoURL: user.photoURL,
-        });
-      } else if (user) {
-        setAuth({
-          authLevel: 1,
-          email: user.email,
-          uid: user.uid,
-          name: user.displayName,
-          photoURL: user.photoURL,
-        });
-      } else {
+      if (user) {
+        const [username, name] = user.displayName!.split("-");
+        if (user.emailVerified) {
+          setAuth({
+            authLevel: 2,
+            email: user.email,
+            uid: user.uid,
+            username: username,
+            name: name,
+            photoURL: user.photoURL,
+          });
+        } else {
+          setAuth({
+            authLevel: 1,
+            email: user.email,
+            uid: user.uid,
+            username: username,
+            name: name,
+            photoURL: user.photoURL,
+          });
+        }
+      }
+      else {
         setAuth({
           authLevel: 0,
           email: null,
           uid: undefined,
+          username: null,
           name: null,
           photoURL: null,
         });

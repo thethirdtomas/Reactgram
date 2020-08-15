@@ -6,6 +6,7 @@ export const PasswordMinLength: number = 6;
 export const PasswordMaxLength: number = 100;
 export const BioMaxLength = 160;
 export const LocationMaxLength = 30;
+export const PostTextMaxLength = 280;
 
 
 //Pattern constraints

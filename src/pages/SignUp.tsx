@@ -109,7 +109,7 @@ export const SignUp: React.FC = () => {
         firebase.auth().createUserWithEmailAndPassword(data.email.trim(), data.password.trim())
           .then(response => {
             response.user?.updateProfile({
-              displayName: data.name.trim(),
+              displayName: `${data.username.trim()}-${data.name.trim()}`,
               photoURL: undefined,
             })
             firebase.firestore().collection('users').doc(response.user?.uid).set({

@@ -63,11 +63,11 @@ export const Profile: React.FC = () => {
   useEffect(() => {
     if (auth) {
       setPageLoading(false);
-      const postsStream = firebase.firestore()
+      const unsubscribe = firebase.firestore()
         .collection('posts')
-        .orderBy('created', 'desc')
+        .where('uid', '==', auth.uid)
+        .orderBy("created", "desc")
         .onSnapshot(snapshots => {
-          console.log('here in profile')
           setPosts(snapshots.docs.map((doc): PostData => {
             const data = doc.data();
             return {
@@ -85,9 +85,8 @@ export const Profile: React.FC = () => {
           }
           ));
         });
-
       return () => {
-        postsStream();
+        unsubscribe();
       }
     }
   }, [auth])

@@ -70,7 +70,7 @@ export const Home: React.FC = () => {
 
   //Posts Effect
   useEffect(() => {
-    const postsStream = firebase.firestore()
+    const unsubscribe = firebase.firestore()
       .collection('posts')
       .orderBy('created', 'desc')
       .onSnapshot(snapshot => {
@@ -90,10 +90,8 @@ export const Home: React.FC = () => {
           }
         }));
       });
-
-    //Clean Up
     return () => {
-      postsStream();
+      unsubscribe();
     }
   }, [])
 

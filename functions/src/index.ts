@@ -30,7 +30,6 @@ export const updateDenormalizedProfileData = functions.firestore
           });
       }
     }
-
     return null;
   });
 

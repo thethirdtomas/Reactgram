@@ -114,6 +114,12 @@ export const PostForm: React.FC<Props> = ({ auth }) => {
         imageURL = await uploadImage(`/postImages/${postsRef.id}`, state.postImage.file);
       } catch (e) {
         console.log(e);
+        setState({
+          ...state,
+          loading: false,
+          errorMsg: "Image file > 5MB"
+        });
+        return;
       }
     }
 

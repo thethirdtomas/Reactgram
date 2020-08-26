@@ -89,23 +89,26 @@ export const ProfileCard: React.FC<Props> = ({ uid, editable }) => {
   }
 
   useEffect(() => {
-    firebase.firestore().collection('users')
-      .doc(uid).get().then((snapshot) => {
-        if (snapshot.exists) {
-          setProfileData({
-            name: snapshot.data()!.name,
-            username: snapshot.data()!.username,
-            joined: snapshot.data()!.joined,
-            bio: snapshot.data()!.bio,
-            location: snapshot.data()!.location,
-            birthDate: snapshot.data()!.birthDate,
-            photoURL: snapshot.data()!.photoURL,
-            headerURL: snapshot.data()!.headerURL,
-          })
-        }
-      }).then(() => {
-        setLoading(false);
-      })
+    if (uid) {
+      firebase.firestore().collection('users')
+        .doc(uid).get().then((snapshot) => {
+          if (snapshot.exists) {
+            setProfileData({
+              name: snapshot.data()!.name,
+              username: snapshot.data()!.username,
+              joined: snapshot.data()!.joined,
+              bio: snapshot.data()!.bio,
+              location: snapshot.data()!.location,
+              birthDate: snapshot.data()!.birthDate,
+              photoURL: snapshot.data()!.photoURL,
+              headerURL: snapshot.data()!.headerURL,
+            })
+          }
+        }).then(() => {
+          setLoading(false);
+        });
+    }
+
   }, [uid]);
 
   if (loading) {

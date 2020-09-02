@@ -1,4 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+/*Utilitles*/
+import firebase from '../utilities/FirebaseDAO';
 
 /*Types*/
 import { PostData } from '../types/myTypes';
@@ -18,16 +21,45 @@ import {
 /*Material UI Icons*/
 import {
   CommentOutlined,
-  FavoriteBorder,
+  Favorite,
+  FavoriteBorderOutlined,
   RepeatOutlined,
   ShareOutlined,
 } from '@material-ui/icons'
 
 type Props = {
-  postData: PostData
+  postData: PostData,
+  uid: string | undefined
 }
 
-export const PostView: React.FC<Props> = ({ postData }) => {
+export const PostView: React.FC<Props> = ({ postData, uid }) => {
+  const [liked, setLiked] = useState<boolean>(false);
+
+  const toggleLike = () => {
+    firebase.functions().httpsCallable("handleLikePost")({
+      liked: !liked,
+      postId: postData.id,
+    });
+    setLiked(!liked);
+  }
+
+  useEffect(() => {
+    if (uid) {
+      firebase.firestore()
+        .collection('posts')
+        .doc(postData.id)
+        .collection("likesList")
+        .doc(uid)
+        .get().then(snap => {
+          if (snap.exists) {
+            setLiked(true);
+          } else {
+            setLiked(false);
+          }
+        })
+    }
+  }, [postData.id, uid])
+
   return (
     <Card>
       <CardHeader
@@ -62,8 +94,11 @@ export const PostView: React.FC<Props> = ({ postData }) => {
           <RepeatOutlined />
         </IconButton>
         <Typography variant='subtitle2'>{postData.reposts}</Typography>
-        <IconButton>
-          <FavoriteBorder />
+        <IconButton onClick={() => toggleLike()}>
+          {liked
+            ? <Favorite color='error' />
+            : <FavoriteBorderOutlined />
+          }
         </IconButton>
         <Typography variant='subtitle2'>{postData.likes}</Typography>
         <IconButton>

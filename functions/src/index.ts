@@ -5,7 +5,7 @@ admin.initializeApp();
 
 export const updateDenormalizedProfileData = functions.firestore
   .document('users/{userID}')
-  .onWrite((change, context) => {
+  .onWrite((change) => {
     const dataBefore = change.before.data();
     const dataAfter = change.after.data();
 
@@ -33,3 +33,23 @@ export const updateDenormalizedProfileData = functions.firestore
     return null;
   });
 
+export const handleLikePost = functions.https.onCall((data, context) => {
+  const uid = context.auth?.uid;
+
+  if (uid) {
+    const liked = data.liked;
+    const postId = data.postId;
+    const updateValue = admin.firestore.FieldValue.increment(liked ? 1 : -1)
+
+    const postRef = admin.firestore().collection('posts').doc(postId);
+    const likedUserRef = postRef.collection('likesList').doc(uid);
+
+    const batch = admin.firestore().batch();
+    batch.update(postRef, { likes: updateValue });
+    liked ? batch.create(likedUserRef, {}) : batch.delete(likedUserRef);
+
+    return batch.commit();
+  }
+
+  return null;
+});

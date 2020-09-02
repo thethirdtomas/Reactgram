@@ -119,6 +119,8 @@ export const SignUp: React.FC = () => {
             });
             response.user?.sendEmailVerification().then(() => {
               setRedirect('/verify-email');
+            }).catch(error => {
+              console.log(error);
             })
           })
           .catch((error) => {

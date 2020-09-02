@@ -64,7 +64,7 @@ export const SignIn: React.FC = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [loading, setLoading] = useState(false); //Sign In Loading
   const [showPassword, setShowPassword] = useState(false);
-  const [invaildCred, setInvaildCred] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
 
   const classes = useStyles();
@@ -103,13 +103,15 @@ export const SignIn: React.FC = () => {
     firebase.auth().signInWithEmailAndPassword(formData.email, formData.password)
       .then(response => {
         if (!response.user?.emailVerified) {
-          response.user?.sendEmailVerification();
+          response.user?.sendEmailVerification().catch(() => {
+            setErrorMsg("Please verify your email");
+          });
           setRedirect('/verify-email');
         }
       })
       .catch(() => {
         setLoading(false);
-        setInvaildCred(true);
+        setErrorMsg("Invalid email or password");
         reset({ ...formData, password: '' });
       })
   }
@@ -179,9 +181,9 @@ export const SignIn: React.FC = () => {
                     </FormControl>
                   </Grid>
                 </Grid>
-                {invaildCred &&
+                {errorMsg &&
                   <Grid item>
-                    <Typography variant='body2' color='error'> Invalid email or password. </Typography>
+                    <Typography variant='body2' color='error'> {errorMsg} </Typography>
                   </Grid>
                 }
                 <Grid item>

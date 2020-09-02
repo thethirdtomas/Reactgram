@@ -33,6 +33,7 @@ export type ProfileData = {
 }
 
 export type PostData = {
+  id: string,
   uid: string,
   username: string,
   name: string,

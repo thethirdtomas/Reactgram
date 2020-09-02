@@ -48,8 +48,8 @@ export const VerifyEmail: React.FC = () => {
   const auth = useAuth()!
 
   const authConstraint: AuthConstraint = {
-    authLevel: 1,
-    constraint: Constraints.equalToLevel
+    authLevel: 2,
+    constraint: Constraints.lessThanLevel
   }
 
   //Redirect Effect

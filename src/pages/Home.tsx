@@ -77,6 +77,7 @@ export const Home: React.FC = () => {
         setPosts(snapshot.docs.map((doc): PostData => {
           const data = doc.data();
           return {
+            id: doc.ref.id,
             uid: data.uid,
             username: data.username,
             name: data.name,
@@ -112,7 +113,7 @@ export const Home: React.FC = () => {
         {posts.map((post) => {
           return (
             <Grid item className={classes.item}>
-              <PostView postData={post} />
+              <PostView postData={post} uid={auth.uid} />
             </Grid>
           )
         })}

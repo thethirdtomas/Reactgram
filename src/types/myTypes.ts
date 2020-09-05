@@ -45,3 +45,11 @@ export type PostData = {
   reposts: number,
   created: firebase.firestore.Timestamp,
 }
+
+export type CommentData = {
+  id: string,
+  username: string,
+  profileURL: string,
+  comment: string,
+  created: firebase.firestore.Timestamp,
+}

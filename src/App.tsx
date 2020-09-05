@@ -12,6 +12,7 @@ import { Home } from './pages/Home';
 import { Likes } from './pages/Likes';
 import { Profile } from './pages/Profile';
 import { Settings } from './pages/Settings';
+import { Post } from './pages/Post';
 
 export const App: React.FC = () => (
   <Router>
@@ -26,8 +27,9 @@ export const App: React.FC = () => (
             <Route path='/forgot-password' component={ForgotPassword} />
             <Route path='/home' component={Home} />
             <Route path='/likes' component={Likes} />
-            <Route path='/profile' component={Profile} />
             <Route path='/settings' component={Settings} />
+            <Route path='/post/:id' exact component={Post} />
+            <Route path='/:username' component={Profile} />
           </Switch>
         </Scaffold>
       </Router>

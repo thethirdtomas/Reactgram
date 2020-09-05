@@ -60,11 +60,12 @@ const styles = makeStyles(({ spacing, breakpoints }: Theme) =>
 
 /*Props*/
 type Props = {
-  uid: string | undefined
-  editable?: boolean
+  username: string,
+  uid: string | undefined,
+  editable?: boolean,
 }
 
-export const ProfileCard: React.FC<Props> = ({ uid, editable }) => {
+export const ProfileCard: React.FC<Props> = ({ username, uid, editable }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [profileData, setProfileData] = useState<ProfileData>();
   const [openEditProfile, setOpenEditProfile] = useState<boolean>(false);
@@ -89,9 +90,12 @@ export const ProfileCard: React.FC<Props> = ({ uid, editable }) => {
   }
 
   useEffect(() => {
-    if (uid) {
-      firebase.firestore().collection('users')
-        .doc(uid).get().then((snapshot) => {
+    firebase.firestore()
+      .collection('users')
+      .where("username", "==", username)
+      .limit(1)
+      .get().then(snaps => {
+        snaps.docs.forEach(snapshot => {
           if (snapshot.exists) {
             setProfileData({
               name: snapshot.data()!.name,
@@ -104,12 +108,13 @@ export const ProfileCard: React.FC<Props> = ({ uid, editable }) => {
               headerURL: snapshot.data()!.headerURL,
             })
           }
-        }).then(() => {
-          setLoading(false);
-        });
-    }
+        })
+      }).then(() => {
+        setLoading(false);
+      });
 
-  }, [uid]);
+
+  }, [username]);
 
   if (loading) {
     return <CenterLoad />

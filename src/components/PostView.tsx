@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en';
 
 /*Utilitles*/
 import firebase from '../utilities/FirebaseDAO';
@@ -34,11 +37,15 @@ type Props = {
 
 export const PostView: React.FC<Props> = ({ postData, uid }) => {
   const [liked, setLiked] = useState<boolean>(false);
+  TimeAgo.addLocale(en);
+  const timeAgo = new TimeAgo('en-US');
 
   const toggleLike = () => {
     firebase.functions().httpsCallable("handleLikePost")({
       liked: !liked,
       postId: postData.id,
+    }).catch(e => {
+      console.log(e);
     });
     setLiked(!liked);
   }
@@ -62,33 +69,39 @@ export const PostView: React.FC<Props> = ({ postData, uid }) => {
 
   return (
     <Card>
-      <CardHeader
-        avatar={
-          <Avatar
-            src={postData.profileURL ? postData.profileURL : ''}
-            onClick={() => { console.log("You clicked the avatar") }}
+      <Link to={`/${postData.username}`} style={{ textDecoration: 'none' }}>
+        <CardHeader
+          onClick={() => { window.scrollTo(0, 0) }}
+          avatar={
+            <Avatar
+              src={postData.profileURL ? postData.profileURL : ''}
+            />
+          }
+          title={postData.name}
+          subheader={`@${postData.username} - ${timeAgo.format(postData.created.toDate(), 'twitter')}`}
+        />
+      </Link>
+      <Link to={`/post/${postData.id}`} style={{ textDecoration: 'none' }}>
+        <CardContent>
+          <Typography variant="body1" align='left' color="textSecondary" component="p">
+            {postData.text}
+          </Typography>
+        </CardContent>
+        {postData.image &&
+          <CardMedia
+            component="img"
+            image={postData.image}
+            title="Post Image"
           />
         }
-        title={postData.name}
-        subheader={`@${postData.username} - 10h`}
-      />
-      <CardContent>
-        <Typography variant="body1" align='left' color="textSecondary" component="p">
-          {postData.text}
-        </Typography>
-      </CardContent>
-      {postData.image &&
-        <CardMedia
-          component="img"
-          image={postData.image}
-          title="Post Image"
-        />
-      }
+      </Link>
 
       <CardActions disableSpacing>
-        <IconButton>
-          <CommentOutlined />
-        </IconButton>
+        <Link to={`/post/${postData.id}`} style={{ textDecoration: 'none' }}>
+          <IconButton>
+            <CommentOutlined />
+          </IconButton>
+        </Link>
         <Typography variant='subtitle2'>{postData.comments}</Typography>
         <IconButton>
           <RepeatOutlined />

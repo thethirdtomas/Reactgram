@@ -120,7 +120,7 @@ export const Header: React.FC = () => {
             open={isMenuOpen}
             onClose={handleMenuClose}
         >
-            <Link to='/profile' style={{ textDecoration: 'none' }}>
+            <Link to={`${auth?.username ? `/${auth.username}` : ""}`} style={{ textDecoration: 'none' }}>
                 <MenuItem onClick={handleMenuClose}>
                     <Typography variant='subtitle1'>
                         My Profile
@@ -185,7 +185,7 @@ export const Header: React.FC = () => {
 
                 </MenuItem>
             </Link>
-            <Link to='/profile' style={{ textDecoration: 'none' }}>
+            <Link to={`${auth?.username ? `/${auth.username}` : ""}`} style={{ textDecoration: 'none' }}>
                 <MenuItem onClick={handleMobileMenuClose}>
                     <IconButton color="inherit">
                         <Avatar className={classes.avatar} src={auth?.photoURL ? auth.photoURL : ''} />

@@ -9,9 +9,6 @@ import firebase from '../utilities/FirebaseDAO';
 /*Types*/
 import { PostData } from '../types/myTypes';
 
-/*Custom Components */
-import { PostView } from '../components/PostView';
-
 /*Material UI Components*/
 import {
   Grid,
@@ -20,6 +17,7 @@ import {
 /*Costum Components*/
 import { useAuth, AuthConstraint, Constraints, AuthRedirect } from '../components/AuthProvider';
 import { ProfileCard } from '../components/ProfileCard';
+import { PostView } from '../components/PostView';
 import {
   CenterLoad,
 } from '../components/MyComponents';
@@ -38,12 +36,13 @@ const styles = makeStyles(({ breakpoints }: Theme) =>
   }),
 );
 
-export const Profile: React.FC = () => {
+export const Profile: React.FC = (props: any) => {
   const auth = useAuth()!
   const classes = styles();
   const [pageLoading, setPageLoading] = useState(true);
   const [redirect, setRedirect] = useState<string | null>(null);
   const [posts, setPosts] = useState<PostData[]>([]);
+  const username = props.match.params.username;
 
   const authConstraint: AuthConstraint = {
     authLevel: 1,
@@ -65,7 +64,7 @@ export const Profile: React.FC = () => {
       setPageLoading(false);
       const unsubscribe = firebase.firestore()
         .collection('posts')
-        .where('uid', '==', auth.uid)
+        .where('username', '==', username)
         .orderBy("created", "desc")
         .onSnapshot(snapshots => {
           setPosts(snapshots.docs.map((doc): PostData => {
@@ -90,7 +89,7 @@ export const Profile: React.FC = () => {
         unsubscribe();
       }
     }
-  }, [auth])
+  }, [auth, username])
 
   //auth redirect
   if (redirect) {
@@ -104,7 +103,10 @@ export const Profile: React.FC = () => {
       <Helmet><title>My Profile / Reactgram</title></Helmet>
       <Grid container direction='column' alignItems='center' spacing={4} >
         <Grid item className={classes.item}>
-          <ProfileCard uid={auth.uid} editable />
+          <ProfileCard
+            username={username}
+            uid={auth.uid}
+            editable={auth.username === username} />
         </Grid>
         {posts.map((post) => {
           return (

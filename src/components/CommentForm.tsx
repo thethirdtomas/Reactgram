@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom'
 import * as EmojiPicker from 'emoji-picker-react';
@@ -11,7 +11,6 @@ import firebase from '../utilities/FirebaseDAO';
 import {
   Card,
   CardContent,
-  CardMedia,
   Grid,
   Avatar,
   IconButton,
@@ -25,8 +24,6 @@ import {
 
 /*Material UI Icons*/
 import {
-  ImageOutlined,
-  GifOutlined,
   EmojiEmotionsOutlined,
   EmojiEmotions,
   CloseOutlined,
@@ -64,6 +61,7 @@ const styles = makeStyles(({ breakpoints, palette }: Theme) =>
 //Props
 type Props = {
   auth: AuthState,
+  postId: string,
 }
 
 //State
@@ -72,7 +70,6 @@ type State = {
   textProgress: number,
   progressColor: string,
   charsLeft: number | null,
-  postImage: { url: string, file: File } | null,
   loading: boolean,
   errorMsg: string | null,
 }
@@ -83,70 +80,15 @@ const defaultState: State = {
   textProgress: 0,
   progressColor: "#3F51B5",
   charsLeft: null,
-  postImage: null,
   loading: false,
   errorMsg: null,
 }
 
-export const PostForm: React.FC<Props> = ({ auth }) => {
+export const CommentForm: React.FC<Props> = ({ auth, postId }) => {
   const classes = styles();
   const [state, setState] = useState<State>(defaultState)
   const [emojiAnchor, setEmojiAnchor] = useState<HTMLButtonElement | null>(null)
-
-  //Refs
-  const postImageRef = useRef<HTMLInputElement>(null);
-
   let emojiBuffer: string = "";
-
-  const uploadImage = async (path: string, file: File): Promise<string> => {
-    let storageRef = firebase.storage().ref().child(path);
-    await storageRef.put(file);
-    return storageRef.getDownloadURL();
-  }
-
-  const handlePost = async () => {
-    setState({ ...state, loading: true });
-    const postsRef = firebase.firestore().collection('posts').doc();
-    let imageURL = null;
-
-    if (state.postImage?.file) {
-      try {
-        imageURL = await uploadImage(`/postImages/${postsRef.id}`, state.postImage.file);
-      } catch (e) {
-        console.log(e);
-        setState({
-          ...state,
-          loading: false,
-          errorMsg: "Image file > 5MB"
-        });
-        return;
-      }
-    }
-
-    try {
-      await postsRef.set({
-        uid: auth.uid,
-        username: auth.username,
-        name: auth.name,
-        profileURL: auth.photoURL,
-        text: state.postText,
-        image: imageURL,
-        likes: 0,
-        comments: 0,
-        reposts: 0,
-        created: firebase.firestore.Timestamp.now(),
-      })
-      setState(defaultState);
-    } catch (e) {
-      console.log(e);
-      setState({
-        ...state,
-        loading: false,
-        errorMsg: "Post failed. Please try again."
-      });
-      return;
-    }
-  }
 
   const textChange = (value: string) => {
     let textLen = value.trim().length;
@@ -167,7 +109,7 @@ export const PostForm: React.FC<Props> = ({ auth }) => {
 
   const calcPostDisabled = (value: string): boolean => {
     const textLen = value.trim().length;
-    return textLen > PostTextMaxLength || (textLen === 0 && !!!state.postImage)
+    return textLen > PostTextMaxLength || textLen === 0 || auth.authLevel < 2;
   }
 
   const calcTextProgress = (textLen: number): number => {
@@ -192,27 +134,6 @@ export const PostForm: React.FC<Props> = ({ auth }) => {
     return "#CD3700";
   }
 
-  const handlePostImageSelect = (files: FileList | null) => {
-    if (files && files.length > 0) {
-      setState({
-        ...state,
-        postImage: {
-          file: files[0],
-          url: URL.createObjectURL(files[0])
-        },
-        errorMsg: null
-      })
-    }
-  }
-
-  const clearPostImage = () => {
-    setState({
-      ...state,
-      postImage: null,
-      errorMsg: null
-    })
-  }
-
   const handleEmojiSelect = (emoji: string) => {
     emojiBuffer += emoji;
     textChange(state.postText + emojiBuffer);
@@ -226,17 +147,26 @@ export const PostForm: React.FC<Props> = ({ auth }) => {
     setEmojiAnchor(null);
   }
 
+  const handlePost = () => {
+    setState({ ...state, loading: true });
+    firebase.functions().httpsCallable("handleCommentPost")({
+      profileURL: auth.photoURL,
+      username: auth.username,
+      comment: state.postText,
+      postId: postId,
+    }).catch(e => {
+      console.log(e);
+      setState({
+        ...state,
+        loading: false,
+        errorMsg: "Failed to post comment. Please try agian."
+      })
+    })
+    setState(defaultState);
+  }
+
   return (
     <Card>
-      <input
-        type="file"
-        ref={postImageRef}
-        style={{ display: "none" }}
-        accept="image/*"
-        onChange={e => handlePostImageSelect(e.target.files)}
-        onClick={e => e.currentTarget.value = ''}
-      />
-
       <Popover
         open={!!emojiAnchor}
         anchorEl={emojiAnchor}
@@ -257,7 +187,7 @@ export const PostForm: React.FC<Props> = ({ auth }) => {
         <Grid container direction='column' alignItems="stretch">
           <Grid item>
             <TextField
-              placeholder="What's happening?"
+              placeholder="What do you think?"
               multiline
               value={state.postText}
               onChange={e => textChange(e.target.value)}
@@ -298,34 +228,8 @@ export const PostForm: React.FC<Props> = ({ auth }) => {
               }}
             />
           </Grid>
-          {state.postImage &&
-            <Box position="relative" display="inline-flex">
-              <CardMedia
-                className={classes.postImage}
-                component="img"
-                image={state.postImage.url}
-                title="Post Image"
-              />
-              <Box
-                position="absolute"
-                display="flex"
-              >
-                <IconButton onClick={clearPostImage}>
-                  <CloseOutlined className={classes.clearImageButton} />
-                </IconButton>
-              </Box>
-
-            </Box>
-          }
-
           <Grid container item alignItems='center'>
             <Grid item style={{ paddingLeft: 45 }}>
-              <IconButton onClick={() => postImageRef.current?.click()}>
-                <ImageOutlined />
-              </IconButton>
-              <IconButton>
-                <GifOutlined fontSize='large' />
-              </IconButton>
               <IconButton onClick={e => openEmojiPicker(e.currentTarget)}>
                 {emojiAnchor
                   ? <EmojiEmotions style={{ color: "#FFD700" }} />
@@ -344,7 +248,7 @@ export const PostForm: React.FC<Props> = ({ auth }) => {
                   onClick={handlePost}
                 >
                   <Typography variant='button'>
-                    Post
+                    Comment
                   </Typography>
                 </Button>
               }

@@ -46,7 +46,7 @@ export const handleLikePost = functions.https.onCall((data, context) => {
 
     const batch = admin.firestore().batch();
     batch.update(postRef, { likes: updateValue });
-    liked ? batch.create(likedUserRef, {}) : batch.delete(likedUserRef);
+    liked ? batch.create(likedUserRef, { user: uid, time: admin.firestore.Timestamp.now() }) : batch.delete(likedUserRef);
 
     return batch.commit();
   }
